@@ -336,6 +336,20 @@ public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
     }
 
     private String normalizeSize(String model, String size) {
+        if (DOUBAO_SEEDREAM_5_LITE_MODEL.equalsIgnoreCase(model)) {
+            if (!StringUtils.hasText(size)) {
+                return "2k";
+            }
+            var normalizedSize = size.trim().toLowerCase(Locale.ROOT);
+            if ("2k".equals(normalizedSize) || "3k".equals(normalizedSize)) {
+                return normalizedSize;
+            }
+            if (normalizedSize.matches("\\d+x\\d+")) {
+                return normalizedSize;
+            }
+            return "2k";
+        }
+
         if (isDoubaoModel(model)) {
             if (!StringUtils.hasText(size)) {
                 return "1K";

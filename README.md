@@ -4,8 +4,8 @@
 
 ## 当前版本
 
-- 插件版本：`1.0.26`
-- 版本规则：后续只递增最后一位，例如 `1.0.26 -> 1.0.27`
+- 插件版本：`1.0.28`
+- 版本规则：后续只递增最后一位，例如 `1.0.28 -> 1.0.29`
 
 ## 手动升级版本
 
@@ -27,24 +27,28 @@
   - `doubao/doubao-seedream-4-0-250828`
   - `qianfan/qwen-image`
   - `openai/gpt-image-1-mini`
-- 默认尺寸：`1K`
-- 默认低成本档显示为：`720p / 1K（低成本）`
+- 默认尺寸：`2k`
 - 可选尺寸：
-  - Doubao：`720p / 1K（低成本）`、`2K`、`auto`
+  - Seedream 5 Lite：`2k`、`3k`
+  - Seedream 4：`1K`、`2K`、`auto`
   - Qwen：`1024x1024`
   - GPT Mini：`1024x1024`
 - Doubao 固定返回：`url`
 - Doubao 默认质量：`low`
 - Doubao 固定张数：`1`
 
-## 1.0.26 调整
+## 1.0.28 调整
 
-- 新增并默认切换到官方模型：`doubao/doubao-seedream-5.0-lite`
-- Doubao 默认走低成本档：`1K + quality=low`
-- 前端文案把低成本档标成 `720p / 1K（低成本）`，避免误填上游不支持的尺寸值
-- 修复保存到 Halo 时 `Invalid part of policyName`
-- 上传附件改为通过 multipart 表单传 `policyName` 和 `groupName`
-- 如果插件设置里填的是存储策略显示名，前端会自动匹配成 Halo 真正的策略名再上传
+- 修复 `doubao/doubao-seedream-5.0-lite` 的尺寸映射错误
+- 这个模型不再发送 `1K` 或 `auto`，改为只发送它当前支持的 `2k`、`3k` 或显式 `WIDTHxHEIGHT`
+- 前端尺寸选项按模型分开显示，避免 5.0-lite 继续选到无效尺寸
+- 后端代码级默认尺寸也同步改成 `2k`，避免未保存设置时又回退到 `1K`
+
+## 为什么之前会看到 502
+
+- AiHubMix 真正返回的是参数错误，不是网络挂了
+- 插件后端把上游错误统一包装成 `502 BAD_GATEWAY` 返回给前端
+- 你这次的真正根因是：`doubao-seedream-5.0-lite` 不接受 `1K/auto`，它当前要求 `WIDTHxHEIGHT`、`2k` 或 `3k`
 
 ## 使用方式
 
@@ -68,5 +72,5 @@
 ## 备注
 
 - 如果 `https://aihubmix.com/v1` 在你的服务器上解析失败，可以直接改成 `https://api.aihubmix.com/v1`
-- 目前参考的 AiHubMix 文档里，Doubao 尺寸仍以 `1K / 2K / 4K / auto` 为主，所以这次没有把 `720p` 直接作为上游 size 值发送，避免再次触发 size 参数错误
-- 你要的“720p”我这里按低成本档处理成 `1K + quality=low`，这是当前更稳的近似方案
+- 这次关于 `doubao-seedream-5.0-lite` 的尺寸规则，我按你实际拿到的 AiHubMix 返回错误做了收敛：有效值是 `WIDTHxHEIGHT`、`2k` 或 `3k`
+- 你给的官方 curl 用的是 `2K`，插件里我统一规范成更稳的 `2k`

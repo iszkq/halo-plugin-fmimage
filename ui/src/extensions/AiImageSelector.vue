@@ -32,7 +32,7 @@ const prompt = ref("");
 const negativePrompt = ref("");
 const provider = ref("");
 const model = ref("");
-const size = ref("1K");
+const size = ref("2k");
 const count = ref(1);
 const responseFormat = ref("url");
 const quality = ref("");
@@ -58,9 +58,15 @@ const selectedResult = computed(() => results.value[selectedIndex.value]);
 const availableSizes = computed(() => {
   if (provider.value === "aihubmix") {
     const normalizedModel = model.value.toLowerCase();
+    if (normalizedModel === "doubao/doubao-seedream-5.0-lite") {
+      return [
+        { label: "2K（当前模型最低档）", value: "2k" },
+        { label: "3K", value: "3k" },
+      ];
+    }
     if (normalizedModel.startsWith("doubao/")) {
       return [
-        { label: "720p / 1K（低成本）", value: "1K" },
+        { label: "1K", value: "1K" },
         { label: "2K (16:9)", value: "2K" },
         { label: "auto", value: "auto" },
       ];
@@ -167,7 +173,7 @@ async function loadInitialData() {
       availableProviders.value[0]?.name ||
       "";
     model.value = availableProviders.value.find((item) => item.name === provider.value)?.defaultModel || "";
-    size.value = providerCatalog.defaultSize || "1K";
+    size.value = providerCatalog.defaultSize || "2k";
     count.value = providerCatalog.defaultCount || 1;
     responseFormat.value = providerCatalog.defaultResponseFormat || "url";
     syncModelOptions();

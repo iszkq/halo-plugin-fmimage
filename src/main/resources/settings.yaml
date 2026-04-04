@@ -17,14 +17,14 @@ spec:
         - $formkit: select
           name: defaultSize
           label: 默认尺寸
-          value: 1K
+          value: 2k
           options:
-            - label: 720p / 1K（低成本）
-              value: 1K
-            - label: 2K (16:9)
-              value: 2K
-            - label: auto
-              value: auto
+            - label: 2K（当前默认模型最低档）
+              value: 2k
+            - label: 3K
+              value: 3k
+            - label: 1024x1024
+              value: 1024x1024
         - $formkit: number
           name: defaultCount
           label: 默认生成数量

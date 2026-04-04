@@ -22,7 +22,7 @@ public record GeneralSettings(
     public static GeneralSettings defaults() {
         return new GeneralSettings(
             ProviderType.AIHUBMIX.id(),
-            "1K",
+            "2k",
             1,
             "url",
             "",
