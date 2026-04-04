@@ -46,6 +46,10 @@ export interface HaloAttachment {
   url?: string;
 }
 
+const MAX_UPLOAD_IMAGE_BYTES = 300 * 1024;
+const COMPRESSION_QUALITIES = [0.88, 0.8, 0.72, 0.64, 0.56, 0.48, 0.4, 0.32, 0.24, 0.18, 0.14];
+const COMPRESSION_SCALES = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.32, 0.24, 0.18, 0.14];
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     credentials: "same-origin",
@@ -112,8 +116,9 @@ export async function listGroups(): Promise<HaloGroup[]> {
 }
 
 export async function uploadAttachment(file: File, policyName: string, groupName?: string): Promise<HaloAttachment> {
+  const preparedFile = await compressImageForUpload(file);
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("file", preparedFile);
   formData.append("policyName", policyName.trim());
   if (groupName?.trim()) {
     formData.append("groupName", groupName.trim());
@@ -192,6 +197,102 @@ async function resolveUploadedAttachment(attachment: HaloAttachment): Promise<Ha
   }
 
   return latestAttachment;
+}
+
+function isCompressibleImage(file: File): boolean {
+  return file.type.startsWith("image/");
+}
+
+function replaceFileExtension(fileName: string, nextExtension: string): string {
+  const normalizedExtension = nextExtension.startsWith(".") ? nextExtension : `.${nextExtension}`;
+  const index = fileName.lastIndexOf(".");
+  if (index <= 0) {
+    return `${fileName}${normalizedExtension}`;
+  }
+  return `${fileName.slice(0, index)}${normalizedExtension}`;
+}
+
+function extensionForMimeType(mimeType: string): string {
+  return mimeType === "image/webp" ? ".webp" : ".jpg";
+}
+
+async function loadImageDimensions(file: File): Promise<HTMLImageElement> {
+  return await new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("图片压缩前读取失败"));
+    };
+    image.src = objectUrl;
+  });
+}
+
+async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality: number): Promise<Blob | null> {
+  return await new Promise((resolve) => {
+    canvas.toBlob(resolve, mimeType, quality);
+  });
+}
+
+async function compressImageForUpload(file: File): Promise<File> {
+  if (!isCompressibleImage(file) || file.size <= MAX_UPLOAD_IMAGE_BYTES) {
+    return file;
+  }
+
+  const image = await loadImageDimensions(file);
+  const candidateMimeTypes = ["image/webp", "image/jpeg"];
+  let bestBlob: Blob | null = null;
+  let bestMimeType = file.type || "image/webp";
+
+  for (const scale of COMPRESSION_SCALES) {
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+
+    const context = canvas.getContext("2d");
+    if (!context) {
+      break;
+    }
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    for (const mimeType of candidateMimeTypes) {
+      for (const quality of COMPRESSION_QUALITIES) {
+        const blob = await canvasToBlob(canvas, mimeType, quality);
+        if (!blob) {
+          continue;
+        }
+
+        if (bestBlob == null || blob.size < bestBlob.size) {
+          bestBlob = blob;
+          bestMimeType = mimeType;
+        }
+
+        if (blob.size <= MAX_UPLOAD_IMAGE_BYTES) {
+          return new File(
+            [blob],
+            replaceFileExtension(file.name, extensionForMimeType(mimeType)),
+            { type: mimeType }
+          );
+        }
+      }
+    }
+  }
+
+  if (bestBlob != null) {
+    return new File(
+      [bestBlob],
+      replaceFileExtension(file.name, extensionForMimeType(bestMimeType)),
+      { type: bestMimeType }
+    );
+  }
+
+  return file;
 }
 
 export function toSelectedAttachment(attachment: HaloAttachment): AttachmentSimple {
