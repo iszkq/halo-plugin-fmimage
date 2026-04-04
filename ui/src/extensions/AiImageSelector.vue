@@ -54,10 +54,27 @@ const selectedProvider = computed<ProviderItem | undefined>(() =>
 );
 
 const selectedResult = computed(() => results.value[selectedIndex.value]);
+const sizeLabel = computed(() => (isGeminiFreeImageModel(model.value) ? "宽高比" : "尺寸"));
+
+function isGeminiFreeImageModel(value: string) {
+  return value.toLowerCase() === "gemini-3.1-flash-image-preview-free";
+}
 
 const availableSizes = computed(() => {
   if (provider.value === "aihubmix") {
     const normalizedModel = model.value.toLowerCase();
+    if (isGeminiFreeImageModel(normalizedModel)) {
+      return [
+        { label: "16:9", value: "16:9" },
+        { label: "1:1", value: "1:1" },
+        { label: "9:16", value: "9:16" },
+        { label: "4:3", value: "4:3" },
+        { label: "3:4", value: "3:4" },
+        { label: "3:2", value: "3:2" },
+        { label: "2:3", value: "2:3" },
+        { label: "21:9", value: "21:9" },
+      ];
+    }
     if (normalizedModel === "doubao/doubao-seedream-5.0-lite") {
       return [
         { label: "2K（当前模型最低档）", value: "2k" },
@@ -88,7 +105,8 @@ const supportsResponseFormat = computed(() => provider.value !== "aihubmix");
 const supportsStyle = computed(() => provider.value !== "aihubmix");
 
 const availableCounts = computed(() => {
-  if (provider.value === "aihubmix" && model.value.toLowerCase().startsWith("doubao/")) {
+  if (provider.value === "aihubmix"
+    && (model.value.toLowerCase().startsWith("doubao/") || isGeminiFreeImageModel(model.value))) {
     return [1];
   }
   return [1, 2, 3, 4];
@@ -322,7 +340,7 @@ onMounted(loadInitialData);
           </label>
 
           <label class="fm-field">
-            <span>尺寸</span>
+            <span>{{ sizeLabel }}</span>
             <select v-model="size">
               <option v-for="item in availableSizes" :key="item.value" :value="item.value">
                 {{ item.label }}

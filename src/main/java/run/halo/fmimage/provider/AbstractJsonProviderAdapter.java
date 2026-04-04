@@ -224,6 +224,10 @@ public abstract class AbstractJsonProviderAdapter implements ImageProviderAdapte
         return URI.create("images/generations");
     }
 
+    protected URI chatCompletionsUri() {
+        return URI.create("chat/completions");
+    }
+
     protected URI predictionUri(String model) {
         var normalizedModel = StringUtils.hasText(model) ? model.trim() : "";
         var encodedModelPath = Arrays.stream(normalizedModel.split("/"))
@@ -270,8 +274,12 @@ public abstract class AbstractJsonProviderAdapter implements ImageProviderAdapte
         if (node == null || node.isMissingNode() || node.isNull()) {
             return;
         }
+        if (node.isTextual() && looksLikeRemoteImage(node.asText())) {
+            addItem(items, seen, new ImageGenerationResponse.Item(node.asText(), "url", fallbackMediaType, "", ""));
+            return;
+        }
         if (node.isArray()) {
-            parseItemsFromArray(node, fallbackMediaType).forEach(item -> addItem(items, seen, item));
+            node.forEach(child -> collectFlexibleItems(child, fallbackMediaType, items, seen));
             return;
         }
         if (!node.isObject()) {
@@ -289,6 +297,11 @@ public abstract class AbstractJsonProviderAdapter implements ImageProviderAdapte
             node.path("artifacts"),
             node.path("urls"),
             node.path("image_urls"),
+            node.path("choices"),
+            node.path("candidates"),
+            node.path("parts"),
+            node.path("multi_mod_content"),
+            node.path("multiModalContent"),
             node.path("result").path("data"),
             node.path("result").path("images"),
             node.path("result").path("output"),
@@ -297,7 +310,10 @@ public abstract class AbstractJsonProviderAdapter implements ImageProviderAdapte
             node.path("prediction").path("output"),
             node.path("response").path("data"),
             node.path("response").path("images"),
-            node.path("response").path("output")
+            node.path("response").path("output"),
+            node.path("message").path("multi_mod_content"),
+            node.path("message").path("multiModalContent"),
+            node.path("content").path("parts")
         )) {
             if (nestedArray != null && nestedArray.isArray()) {
                 collectFlexibleItems(nestedArray, fallbackMediaType, items, seen);
@@ -309,7 +325,11 @@ public abstract class AbstractJsonProviderAdapter implements ImageProviderAdapte
             node.path("prediction"),
             node.path("response"),
             node.path("output"),
-            node.path("image")
+            node.path("image"),
+            node.path("message"),
+            node.path("content"),
+            node.path("inline_data"),
+            node.path("inlineData")
         )) {
             if (nestedObject != null && nestedObject.isObject()) {
                 collectFlexibleItems(nestedObject, fallbackMediaType, items, seen);
@@ -360,12 +380,31 @@ public abstract class AbstractJsonProviderAdapter implements ImageProviderAdapte
             url = imageField.asText();
         }
 
+        var inlineData = firstObject(node.path("inline_data"), node.path("inlineData"));
+        if (inlineData != null) {
+            mediaType = firstText(inlineData.path("mime_type"), inlineData.path("mimeType"), node.path("media_type"));
+            if (!StringUtils.hasText(mediaType)) {
+                mediaType = fallbackMediaType;
+            }
+        } else {
+            mediaType = StringUtils.hasText(mediaType) ? mediaType : fallbackMediaType;
+        }
+
         var b64 = firstText(
             node.path("b64_json"),
             node.path("base64_json"),
             node.path("base64"),
             node.path("image_base64")
         );
+        if (!StringUtils.hasText(b64) && inlineData != null) {
+            b64 = firstText(inlineData.path("data"));
+        }
+        if (!StringUtils.hasText(b64)
+            && firstText(node.path("mime_type"), node.path("mimeType")).length() > 0
+            && node.path("data").isTextual()) {
+            mediaType = firstText(node.path("mime_type"), node.path("mimeType"));
+            b64 = node.path("data").asText();
+        }
         if (!StringUtils.hasText(b64) && imageField.isTextual() && !looksLikeRemoteImage(imageField.asText())) {
             b64 = imageField.asText();
         }

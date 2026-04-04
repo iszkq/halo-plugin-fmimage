@@ -8,7 +8,7 @@ const errorMessage = ref("");
 const summary = ref<PluginSummaryResponse | null>(null);
 const plugin = inject<Ref<Plugin | undefined>>("plugin");
 
-const pluginVersion = computed(() => plugin?.value?.spec.version || summary.value?.version || "1.0.29");
+const pluginVersion = computed(() => plugin?.value?.spec.version || summary.value?.version || "1.0.30");
 const pluginDisplayName = computed(() => plugin?.value?.spec.displayName || "FM Image");
 
 async function loadSummary() {

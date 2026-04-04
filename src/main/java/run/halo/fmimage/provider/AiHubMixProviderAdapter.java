@@ -2,6 +2,7 @@ package run.halo.fmimage.provider;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
+import java.util.ArrayList;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,12 +20,14 @@ import run.halo.fmimage.model.UpstreamImageResult;
 
 @Component
 public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
+    private static final String GEMINI_FLASH_IMAGE_FREE_MODEL = "gemini-3.1-flash-image-preview-free";
     private static final String DOUBAO_SEEDREAM_5_LITE_MODEL = "doubao/doubao-seedream-5.0-lite";
     private static final String DOUBAO_SEEDREAM_4_MODEL = "doubao/doubao-seedream-4-0-250828";
     private static final String LEGACY_DOUBAO_SEEDREAM_4_MODEL = "doubao/doubao-seedream-4-0";
     private static final String QWEN_IMAGE_MODEL = "qianfan/qwen-image";
     private static final String GPT_IMAGE_1_MINI_MODEL = "openai/gpt-image-1-mini";
     private static final List<String> VERIFIED_MODELS = List.of(
+        GEMINI_FLASH_IMAGE_FREE_MODEL,
         DOUBAO_SEEDREAM_5_LITE_MODEL,
         DOUBAO_SEEDREAM_4_MODEL,
         QWEN_IMAGE_MODEL,
@@ -49,6 +52,10 @@ public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
         var model = StringUtils.hasText(request.model()) ? request.model().trim() : providerConfig.defaultModel();
         var normalizedModel = normalizeModelPath(model);
         validateModel(normalizedModel);
+
+        if (isGeminiFlashImageFreeModel(normalizedModel)) {
+            return generateGeminiFreeImage(request, providerConfig, generalSettings, normalizedModel);
+        }
 
         var normalizedSize = normalizeSize(normalizedModel, requestSize(request, generalSettings));
         var input = new LinkedHashMap<String, Object>();
@@ -330,12 +337,23 @@ public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
         throw new ResponseStatusException(
             HttpStatus.BAD_REQUEST,
             "当前版本内置并验证的 AiHubMix 模型只有: "
-                + DOUBAO_SEEDREAM_5_LITE_MODEL + ", " + DOUBAO_SEEDREAM_4_MODEL + ", "
+                + GEMINI_FLASH_IMAGE_FREE_MODEL + ", " + DOUBAO_SEEDREAM_5_LITE_MODEL + ", "
+                + DOUBAO_SEEDREAM_4_MODEL + ", "
                 + QWEN_IMAGE_MODEL + ", " + GPT_IMAGE_1_MINI_MODEL + "。"
         );
     }
 
     private String normalizeSize(String model, String size) {
+        if (isGeminiFlashImageFreeModel(model)) {
+            if (!StringUtils.hasText(size)) {
+                return "16:9";
+            }
+            return switch (size.trim()) {
+                case "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9" -> size.trim();
+                default -> "16:9";
+            };
+        }
+
         if (DOUBAO_SEEDREAM_5_LITE_MODEL.equalsIgnoreCase(model)) {
             if (!StringUtils.hasText(size)) {
                 return "2k";
@@ -379,12 +397,69 @@ public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
         return GPT_IMAGE_1_MINI_MODEL.equalsIgnoreCase(model);
     }
 
+    private boolean isGeminiFlashImageFreeModel(String model) {
+        return GEMINI_FLASH_IMAGE_FREE_MODEL.equalsIgnoreCase(model);
+    }
+
     private boolean isDoubaoModel(String model) {
         return startsWithPrefix(model, "doubao/");
     }
 
     private boolean startsWithPrefix(String model, String prefix) {
         return StringUtils.hasText(model) && model.toLowerCase(Locale.ROOT).startsWith(prefix);
+    }
+
+    private Mono<UpstreamImageResult> generateGeminiFreeImage(GenerateImageRequest request,
+        ResolvedProviderConfig providerConfig, GeneralSettings generalSettings, String model) {
+        var aspectRatio = normalizeSize(model, requestSize(request, generalSettings));
+        var payload = new LinkedHashMap<String, Object>();
+        payload.put("model", model);
+
+        var messages = new ArrayList<Object>();
+        messages.add(message("system", "aspect_ratio=" + aspectRatio));
+        messages.add(userMessage(composedPrompt(request)));
+        payload.put("messages", messages);
+        payload.put("modalities", List.of("text", "image"));
+
+        if (request.extra() != null && !request.extra().isEmpty()) {
+            payload.putAll(request.extra());
+        }
+
+        return postJson(chatCompletionsUri(), payload, providerConfig, generalSettings)
+            .map(root -> {
+                var items = parseFlexibleOutputItems(root, "image/png");
+                if (items.isEmpty()) {
+                    throw noImageResultException(root, providerConfig);
+                }
+                return new UpstreamImageResult(
+                    providerConfig.providerType().id(),
+                    providerConfig.displayName(),
+                    model,
+                    request.prompt(),
+                    aspectRatio,
+                    items
+                );
+            });
+    }
+
+    private LinkedHashMap<String, Object> message(String role, String content) {
+        var message = new LinkedHashMap<String, Object>();
+        message.put("role", role);
+        message.put("content", content);
+        return message;
+    }
+
+    private LinkedHashMap<String, Object> userMessage(String prompt) {
+        var content = new ArrayList<Object>();
+        var textPart = new LinkedHashMap<String, Object>();
+        textPart.put("type", "text");
+        textPart.put("text", prompt);
+        content.add(textPart);
+
+        var message = new LinkedHashMap<String, Object>();
+        message.put("role", "user");
+        message.put("content", content);
+        return message;
     }
 
     private record TaskReference(String taskId, String pollingUrl) {
