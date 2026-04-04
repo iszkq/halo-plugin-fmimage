@@ -24,7 +24,7 @@ public record GeneralSettings(
             ProviderType.AIHUBMIX.id(),
             "1K",
             1,
-            "b64_json",
+            "url",
             "",
             "",
             Boolean.TRUE,

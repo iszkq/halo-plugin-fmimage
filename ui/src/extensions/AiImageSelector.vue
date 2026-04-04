@@ -34,7 +34,7 @@ const provider = ref("");
 const model = ref("");
 const size = ref("1K");
 const count = ref(1);
-const responseFormat = ref("b64_json");
+const responseFormat = ref("url");
 const quality = ref("");
 const style = ref("");
 const policyName = ref("");
@@ -96,7 +96,7 @@ function syncModelOptions() {
     count.value = availableCounts.value[0] || 1;
   }
   if (!supportsResponseFormat.value) {
-    responseFormat.value = "b64_json";
+    responseFormat.value = "url";
   }
   if (!supportsStyle.value) {
     style.value = "";
@@ -134,7 +134,7 @@ async function loadInitialData() {
     model.value = availableProviders.value.find((item) => item.name === provider.value)?.defaultModel || "";
     size.value = providerCatalog.defaultSize || "1K";
     count.value = providerCatalog.defaultCount || 1;
-    responseFormat.value = providerCatalog.defaultResponseFormat || "b64_json";
+    responseFormat.value = providerCatalog.defaultResponseFormat || "url";
     syncModelOptions();
 
     const preferredPolicy = providerCatalog.defaultPolicyName || policyItems[0]?.metadata?.name || "";

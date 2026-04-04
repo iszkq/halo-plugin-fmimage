@@ -19,10 +19,14 @@ import run.halo.fmimage.model.UpstreamImageResult;
 
 @Component
 public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
+    private static final String DOUBAO_SEEDREAM_4_MODEL = "doubao/doubao-seedream-4-0-250828";
+    private static final String LEGACY_DOUBAO_SEEDREAM_4_MODEL = "doubao/doubao-seedream-4-0";
+    private static final String QWEN_IMAGE_MODEL = "qianfan/qwen-image";
+    private static final String GPT_IMAGE_1_MINI_MODEL = "openai/gpt-image-1-mini";
     private static final List<String> VERIFIED_MODELS = List.of(
-        "doubao/doubao-seedream-4-0",
-        "qianfan/qwen-image",
-        "openai/gpt-image-1-mini"
+        DOUBAO_SEEDREAM_4_MODEL,
+        QWEN_IMAGE_MODEL,
+        GPT_IMAGE_1_MINI_MODEL
     );
 
     private static final Duration TASK_POLL_INTERVAL = Duration.ofSeconds(2);
@@ -48,11 +52,15 @@ public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
         var input = new LinkedHashMap<String, Object>();
         input.put("prompt", composedPrompt(request));
 
+        if (request.extra() != null && !request.extra().isEmpty()) {
+            input.putAll(request.extra());
+        }
+
         if (isDoubaoModel(normalizedModel)) {
             input.put("size", normalizedSize);
             input.put("sequential_image_generation", "disabled");
             input.put("stream", false);
-            input.put("response_format", "base64_json");
+            input.put("response_format", "url");
             input.put("watermark", false);
         } else if (isQwenModel(normalizedModel)) {
             input.put("size", normalizedSize);
@@ -63,10 +71,6 @@ public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
             input.put("n", 1);
             input.put("background", "auto");
             input.put("quality", StringUtils.hasText(request.quality()) ? request.quality().trim() : "low");
-        }
-
-        if (request.extra() != null && !request.extra().isEmpty()) {
-            input.putAll(request.extra());
         }
 
         var payload = new LinkedHashMap<String, Object>();
@@ -309,7 +313,11 @@ public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
         if (!StringUtils.hasText(model)) {
             return model;
         }
-        return model.trim();
+        var normalizedModel = model.trim();
+        if (LEGACY_DOUBAO_SEEDREAM_4_MODEL.equalsIgnoreCase(normalizedModel)) {
+            return DOUBAO_SEEDREAM_4_MODEL;
+        }
+        return normalizedModel;
     }
 
     private void validateModel(String model) {
@@ -318,7 +326,8 @@ public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
         }
         throw new ResponseStatusException(
             HttpStatus.BAD_REQUEST,
-            "当前版本内置并验证的 AiHubMix 模型只有: doubao/doubao-seedream-4-0, qianfan/qwen-image, openai/gpt-image-1-mini。"
+            "当前版本内置并验证的 AiHubMix 模型只有: "
+                + DOUBAO_SEEDREAM_4_MODEL + ", " + QWEN_IMAGE_MODEL + ", " + GPT_IMAGE_1_MINI_MODEL + "。"
         );
     }
 
@@ -349,7 +358,7 @@ public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
     }
 
     private boolean isOpenAiMiniModel(String model) {
-        return "openai/gpt-image-1-mini".equalsIgnoreCase(model);
+        return GPT_IMAGE_1_MINI_MODEL.equalsIgnoreCase(model);
     }
 
     private boolean isDoubaoModel(String model) {

@@ -58,11 +58,11 @@ spec:
         - $formkit: text
           name: defaultModel
           label: 默认模型
-          value: doubao/doubao-seedream-4-0
+          value: doubao/doubao-seedream-4-0-250828
         - $formkit: textarea
           name: modelOptions
           label: 模型列表
           value: |
-            doubao/doubao-seedream-4-0
+            doubao/doubao-seedream-4-0-250828
             qianfan/qwen-image
             openai/gpt-image-1-mini
