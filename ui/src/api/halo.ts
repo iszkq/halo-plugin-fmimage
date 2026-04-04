@@ -31,11 +31,19 @@ export interface HaloAttachment {
     mediaType?: string;
     size?: number;
     groupName?: string;
+    url?: string;
+    rawUrl?: string;
   };
   status?: {
     permalink?: string;
     thumbnailPermalink?: string;
+    rawUrl?: string;
+    sharedUrl?: string;
+    downloadUrl?: string;
+    url?: string;
   };
+  permalink?: string;
+  url?: string;
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -122,12 +130,73 @@ export async function uploadAttachment(file: File, policyName: string, groupName
     throw new Error(extractErrorMessage(await response.text(), response.status));
   }
 
-  return (await response.json()) as HaloAttachment;
+  const attachment = (await response.json()) as HaloAttachment;
+  return await resolveUploadedAttachment(attachment);
+}
+
+async function fetchAttachment(name: string): Promise<HaloAttachment> {
+  try {
+    return await request<HaloAttachment>(`/apis/storage.halo.run/v1alpha1/attachments/${encodeURIComponent(name)}`, {
+      method: "GET",
+    });
+  } catch {
+    return await request<HaloAttachment>(`/apis/api.console.halo.run/v1alpha1/attachments/${encodeURIComponent(name)}`, {
+      method: "GET",
+    });
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    globalThis.setTimeout(resolve, ms);
+  });
+}
+
+function extractAttachmentUrl(attachment: HaloAttachment): string {
+  return (
+    attachment.status?.permalink ||
+    attachment.status?.thumbnailPermalink ||
+    attachment.status?.rawUrl ||
+    attachment.status?.sharedUrl ||
+    attachment.status?.downloadUrl ||
+    attachment.status?.url ||
+    attachment.spec?.rawUrl ||
+    attachment.spec?.url ||
+    attachment.permalink ||
+    attachment.url ||
+    ""
+  );
+}
+
+async function resolveUploadedAttachment(attachment: HaloAttachment): Promise<HaloAttachment> {
+  if (extractAttachmentUrl(attachment)) {
+    return attachment;
+  }
+
+  const attachmentName = attachment.metadata?.name;
+  if (!attachmentName) {
+    return attachment;
+  }
+
+  let latestAttachment = attachment;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    await sleep(800);
+    try {
+      latestAttachment = await fetchAttachment(attachmentName);
+      if (extractAttachmentUrl(latestAttachment)) {
+        return latestAttachment;
+      }
+    } catch {
+      // Ignore transient lookup errors and continue retrying.
+    }
+  }
+
+  return latestAttachment;
 }
 
 export function toSelectedAttachment(attachment: HaloAttachment): AttachmentSimple {
   return {
-    url: attachment.status?.permalink || attachment.status?.thumbnailPermalink || "",
+    url: extractAttachmentUrl(attachment),
     mediaType: attachment.spec?.mediaType,
     alt: attachment.spec?.displayName || attachment.metadata?.name,
   };

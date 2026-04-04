@@ -261,7 +261,7 @@ async function handleSave() {
     const attachment = await uploadAttachment(file, resolvedPolicyName, resolvedGroupName || undefined);
     const selectedAttachment = toSelectedAttachment(attachment);
     if (!selectedAttachment.url) {
-      throw new Error("附件已上传，但未返回可插入的访问地址。");
+      throw new Error("附件已上传，但当前存储策略还没有返回可插入地址。若你使用的是 AList 存储，请优先升级 AList 存储插件到 1.1.3。");
     }
     emit("update:selected", [selectedAttachment]);
     successMessage.value = "图片已保存到 Halo 附件库，点击弹窗确认即可插入。";
