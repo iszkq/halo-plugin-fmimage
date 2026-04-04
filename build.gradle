@@ -1,0 +1,64 @@
+import com.github.gradle.node.pnpm.task.PnpmTask
+
+plugins {
+  id "java"
+  id "com.github.node-gradle.node" version "7.0.2"
+  id "run.halo.plugin.devtools" version "0.6.2"
+}
+
+group = project.property("group")
+version = project.property("version")
+
+java {
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(21)
+  }
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  implementation platform("run.halo.tools.platform:plugin:2.22.0")
+  compileOnly "run.halo.app:api"
+
+  testImplementation "run.halo.app:api"
+  testImplementation "org.springframework.boot:spring-boot-starter-test"
+  testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+tasks.withType(JavaCompile).configureEach {
+  options.encoding = "UTF-8"
+  options.release = 21
+}
+
+test {
+  useJUnitPlatform()
+}
+
+node {
+  download = true
+  version = "22.11.0"
+  pnpmVersion = "10.22.0"
+  nodeProjectDir = file("${project.projectDir}/ui")
+}
+
+tasks.register("buildFrontend", PnpmTask) {
+  dependsOn(tasks.named("pnpmInstall"))
+  args = ["build"]
+}
+
+tasks.register("cleanFrontendAssets", Delete) {
+  delete(layout.projectDirectory.dir("src/main/resources/console"))
+}
+
+tasks.register("syncFrontendAssets", Copy) {
+  dependsOn(tasks.named("buildFrontend"), tasks.named("cleanFrontendAssets"))
+  from(layout.projectDirectory.dir("ui/build/dist"))
+  into(layout.projectDirectory.dir("src/main/resources/console"))
+}
+
+tasks.named("processResources") {
+  dependsOn(tasks.named("syncFrontendAssets"))
+}

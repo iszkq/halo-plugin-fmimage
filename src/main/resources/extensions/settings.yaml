@@ -1,0 +1,66 @@
+apiVersion: v1alpha1
+kind: Setting
+metadata:
+  name: halo-plugin-fmimage-settings
+spec:
+  forms:
+    - group: general
+      label: 基础
+      formSchema:
+        - $formkit: select
+          name: defaultProvider
+          label: 默认厂商
+          value: aihubmix
+          options:
+            - label: AiHubMix
+              value: aihubmix
+        - $formkit: select
+          name: defaultSize
+          label: 默认尺寸
+          value: 1K
+          options:
+            - label: 1K
+              value: 1K
+            - label: 2K (16:9)
+              value: 2K
+            - label: auto
+              value: auto
+        - $formkit: number
+          name: defaultCount
+          label: 默认生成数量
+          value: 1
+          min: 1
+          max: 1
+        - $formkit: text
+          name: defaultPolicyName
+          label: 默认存储策略
+          value: ""
+          help: "留空时由用户在前端选择 Halo 当前可用的存储策略。"
+        - $formkit: text
+          name: defaultGroupName
+          label: 默认附件分组
+          value: ""
+    - group: aihubmix
+      label: API / AiHubMix
+      formSchema:
+        - $formkit: checkbox
+          name: enabled
+          label: 启用 AiHubMix
+          value: true
+        - $formkit: text
+          name: baseUrl
+          label: Base URL
+          value: https://aihubmix.com/v1
+        - $formkit: password
+          name: apiKey
+          label: API Key
+          value: ""
+        - $formkit: text
+          name: defaultModel
+          label: 默认模型
+          value: doubao/doubao-seedream-4-0
+        - $formkit: textarea
+          name: modelOptions
+          label: 模型列表
+          value: |
+            doubao/doubao-seedream-4-0

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="FM Image logo">
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+  <rect x="20" y="24" width="88" height="80" rx="16" fill="url(#card)"/>
+  <circle cx="45" cy="49" r="9" fill="#f59e0b"/>
+  <path d="M32 89l17-21 11 13 13-16 23 24H32z" fill="#2563eb"/>
+  <path d="M30 18h68" stroke="#93c5fd" stroke-linecap="round" stroke-width="6"/>
+  <text x="64" y="119" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#e2e8f0">FM</text>
+</svg>
