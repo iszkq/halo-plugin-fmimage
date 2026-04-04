@@ -19,8 +19,9 @@ class ProviderTypeTest {
     void shouldExposeOnlyOfficialProvidersInSupportedList() {
         var supported = ProviderType.supported();
 
-        assertTrue(supported.contains(ProviderType.OPENAI));
         assertTrue(supported.contains(ProviderType.AIHUBMIX));
+        assertEquals(1, supported.size());
+        assertFalse(supported.contains(ProviderType.OPENAI));
         assertFalse(supported.contains(ProviderType.DEEPSEEK));
         assertFalse(supported.contains(ProviderType.OLLAMA));
     }

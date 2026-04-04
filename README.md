@@ -4,8 +4,8 @@
 
 ## 当前版本
 
-- 插件版本：`1.0.22`
-- 版本规则：后续只递增最后一位，例如 `1.0.22 -> 1.0.23`
+- 插件版本：`1.0.24`
+- 版本规则：后续只递增最后一位，例如 `1.0.24 -> 1.0.25`
 
 ## 手动升级版本
 
@@ -21,7 +21,8 @@
 ## 当前默认方案
 
 - 唯一厂商：`AiHubMix`
-- 唯一模型：`doubao/doubao-seedream-4-0`
+- 默认模型：`doubao/doubao-seedream-4-0`
+- 可选模型：`doubao/doubao-seedream-4-0`、`qianfan/qwen-image`、`openai/gpt-image-1-mini`
 - 默认尺寸：`1K`
 - 可选尺寸：`1K`、`2K`、`auto`
 - 返回格式：`base64_json`
@@ -37,6 +38,8 @@
 - 新增后端图片代理下载接口，保存到 Halo 时不再依赖浏览器直连上游图片地址
 - 上传 Halo 附件时补上了 `X-XSRF-TOKEN` 请求头
 - 生成接口错误现在会直接返回明确错误信息，不再只剩笼统的“服务器内部错误”
+- `1.0.23` 已同步修正 `ProviderTypeTest`，让构建测试和当前“仅保留 AiHubMix”策略一致
+- `1.0.24` 新增两个经过官方文档核对的低试错备选模型：`qianfan/qwen-image`、`openai/gpt-image-1-mini`
 
 ## 使用方式
 
@@ -62,4 +65,5 @@
 
 - 如果 `https://aihubmix.com/v1` 在你的服务器上解析失败，可以直接改成 `https://api.aihubmix.com/v1`。
 - 当前版本对 `doubao/doubao-seedream-4-0` 做了固定化处理，目的是减少试错成本，不建议随意改成别的模型名。
+- 如果你只想省钱，优先用 `doubao/doubao-seedream-4-0 + 1K`；`qianfan/qwen-image` 更适合中文文字和海报字效，`openai/gpt-image-1-mini` 作为经济型 GPT 备选。
 - `1K` 是当前已切好的低成本档；你前面提到的 `720P` 我这次没有放进去，是因为当前参考的 AiHubMix 文档里写的是 `1K / 2K / 4K / auto` 这类尺寸枚举。

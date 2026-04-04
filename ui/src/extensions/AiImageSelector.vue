@@ -65,6 +65,12 @@ const availableSizes = computed(() => {
         { label: "auto", value: "auto" },
       ];
     }
+    if (normalizedModel.startsWith("qianfan/qwen-image")) {
+      return [{ label: "1024x1024", value: "1024x1024" }];
+    }
+    if (normalizedModel === "openai/gpt-image-1-mini") {
+      return [{ label: "1024x1024", value: "1024x1024" }];
+    }
     return [{ label: "1K", value: "1K" }];
   }
 
@@ -293,6 +299,11 @@ onMounted(loadInitialData);
           <label v-if="provider !== 'aihubmix'" class="fm-field">
             <span>质量</span>
             <input v-model="quality" type="text" placeholder="可选" />
+          </label>
+
+          <label v-if="model === 'openai/gpt-image-1-mini'" class="fm-field">
+            <span>质量</span>
+            <input v-model="quality" type="text" placeholder="默认 low" />
           </label>
 
           <label class="fm-field" v-if="supportsStyle">

@@ -64,3 +64,5 @@ spec:
           label: 模型列表
           value: |
             doubao/doubao-seedream-4-0
+            qianfan/qwen-image
+            openai/gpt-image-1-mini

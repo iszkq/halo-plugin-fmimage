@@ -20,7 +20,9 @@ import run.halo.fmimage.model.UpstreamImageResult;
 @Component
 public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
     private static final List<String> VERIFIED_MODELS = List.of(
-        "doubao/doubao-seedream-4-0"
+        "doubao/doubao-seedream-4-0",
+        "qianfan/qwen-image",
+        "openai/gpt-image-1-mini"
     );
 
     private static final Duration TASK_POLL_INTERVAL = Duration.ofSeconds(2);
@@ -45,11 +47,23 @@ public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
         var normalizedSize = normalizeSize(normalizedModel, requestSize(request, generalSettings));
         var input = new LinkedHashMap<String, Object>();
         input.put("prompt", composedPrompt(request));
-        input.put("size", normalizedSize);
-        input.put("sequential_image_generation", "disabled");
-        input.put("stream", false);
-        input.put("response_format", "base64_json");
-        input.put("watermark", false);
+
+        if (isDoubaoModel(normalizedModel)) {
+            input.put("size", normalizedSize);
+            input.put("sequential_image_generation", "disabled");
+            input.put("stream", false);
+            input.put("response_format", "base64_json");
+            input.put("watermark", false);
+        } else if (isQwenModel(normalizedModel)) {
+            input.put("size", normalizedSize);
+            input.put("n", 1);
+            input.put("watermark", false);
+        } else if (isOpenAiMiniModel(normalizedModel)) {
+            input.put("size", normalizedSize);
+            input.put("n", 1);
+            input.put("background", "auto");
+            input.put("quality", StringUtils.hasText(request.quality()) ? request.quality().trim() : "low");
+        }
 
         if (request.extra() != null && !request.extra().isEmpty()) {
             input.putAll(request.extra());
@@ -304,22 +318,38 @@ public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
         }
         throw new ResponseStatusException(
             HttpStatus.BAD_REQUEST,
-            "当前版本仅保留并验证 AiHubMix 模型: doubao/doubao-seedream-4-0。"
+            "当前版本内置并验证的 AiHubMix 模型只有: doubao/doubao-seedream-4-0, qianfan/qwen-image, openai/gpt-image-1-mini。"
         );
     }
 
     private String normalizeSize(String model, String size) {
-        if (!isDoubaoModel(model)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "当前仅支持 Doubao Seedream 4.0");
+        if (isDoubaoModel(model)) {
+            if (!StringUtils.hasText(size)) {
+                return "1K";
+            }
+            return switch (size.trim()) {
+                case "1K", "2K", "4K", "auto" -> size.trim();
+                default -> "1K";
+            };
         }
 
-        if (!StringUtils.hasText(size)) {
-            return "1K";
+        if (isQwenModel(model)) {
+            return "1024x1024";
         }
-        return switch (size.trim()) {
-            case "1K", "2K", "4K", "auto" -> size.trim();
-            default -> "1K";
-        };
+
+        if (isOpenAiMiniModel(model)) {
+            return "1024x1024";
+        }
+
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "当前模型暂未配置尺寸映射");
+    }
+
+    private boolean isQwenModel(String model) {
+        return startsWithPrefix(model, "qianfan/qwen-image");
+    }
+
+    private boolean isOpenAiMiniModel(String model) {
+        return "openai/gpt-image-1-mini".equalsIgnoreCase(model);
     }
 
     private boolean isDoubaoModel(String model) {
