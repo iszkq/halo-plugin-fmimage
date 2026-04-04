@@ -117,12 +117,11 @@ public abstract class AbstractJsonProviderAdapter implements ImageProviderAdapte
         return request.retrieve()
             .onStatus(status -> status.isError(), response -> response.bodyToMono(String.class)
                 .defaultIfEmpty("Upstream service returned an error")
-                .flatMap(message -> Mono.error(upstreamException(
-                    HttpStatus.BAD_GATEWAY,
+                .flatMap(message -> Mono.error(upstreamFailureException(
+                    response.statusCode().value(),
+                    message,
                     providerConfig,
-                    generalSettings,
-                    providerConfig.displayName() + " 调用失败: " + summarizeUpstreamMessage(message),
-                    null))))
+                    generalSettings))))
             .bodyToMono(String.class)
             .defaultIfEmpty("")
             .flatMap(body -> decodeJsonBody(body, providerConfig, generalSettings));
@@ -144,12 +143,11 @@ public abstract class AbstractJsonProviderAdapter implements ImageProviderAdapte
         return request.retrieve()
             .onStatus(status -> status.isError(), response -> response.bodyToMono(String.class)
                 .defaultIfEmpty("Upstream service returned an error")
-                .flatMap(message -> Mono.error(upstreamException(
-                    HttpStatus.BAD_GATEWAY,
+                .flatMap(message -> Mono.error(upstreamFailureException(
+                    response.statusCode().value(),
+                    message,
                     providerConfig,
-                    generalSettings,
-                    providerConfig.displayName() + " 调用失败: " + summarizeUpstreamMessage(message),
-                    null))))
+                    generalSettings))))
             .bodyToMono(String.class)
             .defaultIfEmpty("")
             .flatMap(body -> decodeJsonBody(body, providerConfig, generalSettings));
@@ -478,6 +476,38 @@ public abstract class AbstractJsonProviderAdapter implements ImageProviderAdapte
             }
         }
         return new ResponseStatusException(status, message, cause);
+    }
+
+    private ResponseStatusException upstreamFailureException(int upstreamStatusCode, String message,
+        ResolvedProviderConfig providerConfig, GeneralSettings generalSettings) {
+        var status = inferUpstreamStatus(upstreamStatusCode, message);
+        var detail = providerConfig.displayName() + " 调用失败: " + summarizeUpstreamMessage(message);
+        if (status == HttpStatus.TOO_MANY_REQUESTS) {
+            detail = providerConfig.displayName()
+                + " 请求过于频繁或免费模型当前被限流，请稍后再试，或切换到其他模型。上游信息: "
+                + summarizeUpstreamMessage(message);
+        }
+        return upstreamException(status, providerConfig, generalSettings, detail, null);
+    }
+
+    private HttpStatus inferUpstreamStatus(int upstreamStatusCode, String rawMessage) {
+        var status = HttpStatus.resolve(upstreamStatusCode);
+        if (status == HttpStatus.TOO_MANY_REQUESTS) {
+            return status;
+        }
+
+        if (StringUtils.hasText(rawMessage)) {
+            var normalized = rawMessage.toLowerCase();
+            if (normalized.contains("\"code\":429")
+                || normalized.contains("\"code\":\"429\"")
+                || normalized.contains("rate limited")
+                || normalized.contains("too many requests")
+                || normalized.contains("请求过于频繁")) {
+                return HttpStatus.TOO_MANY_REQUESTS;
+            }
+        }
+
+        return status != null ? status : HttpStatus.BAD_GATEWAY;
     }
 
     private String summarizeUpstreamMessage(String raw) {
