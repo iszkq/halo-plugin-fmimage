@@ -19,11 +19,13 @@ import run.halo.fmimage.model.UpstreamImageResult;
 
 @Component
 public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
+    private static final String DOUBAO_SEEDREAM_5_LITE_MODEL = "doubao/doubao-seedream-5.0-lite";
     private static final String DOUBAO_SEEDREAM_4_MODEL = "doubao/doubao-seedream-4-0-250828";
     private static final String LEGACY_DOUBAO_SEEDREAM_4_MODEL = "doubao/doubao-seedream-4-0";
     private static final String QWEN_IMAGE_MODEL = "qianfan/qwen-image";
     private static final String GPT_IMAGE_1_MINI_MODEL = "openai/gpt-image-1-mini";
     private static final List<String> VERIFIED_MODELS = List.of(
+        DOUBAO_SEEDREAM_5_LITE_MODEL,
         DOUBAO_SEEDREAM_4_MODEL,
         QWEN_IMAGE_MODEL,
         GPT_IMAGE_1_MINI_MODEL
@@ -61,6 +63,7 @@ public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
             input.put("sequential_image_generation", "disabled");
             input.put("stream", false);
             input.put("response_format", "url");
+            input.put("quality", StringUtils.hasText(request.quality()) ? request.quality().trim() : "low");
             input.put("watermark", false);
         } else if (isQwenModel(normalizedModel)) {
             input.put("size", normalizedSize);
@@ -327,7 +330,8 @@ public class AiHubMixProviderAdapter extends AbstractJsonProviderAdapter {
         throw new ResponseStatusException(
             HttpStatus.BAD_REQUEST,
             "当前版本内置并验证的 AiHubMix 模型只有: "
-                + DOUBAO_SEEDREAM_4_MODEL + ", " + QWEN_IMAGE_MODEL + ", " + GPT_IMAGE_1_MINI_MODEL + "。"
+                + DOUBAO_SEEDREAM_5_LITE_MODEL + ", " + DOUBAO_SEEDREAM_4_MODEL + ", "
+                + QWEN_IMAGE_MODEL + ", " + GPT_IMAGE_1_MINI_MODEL + "。"
         );
     }
 

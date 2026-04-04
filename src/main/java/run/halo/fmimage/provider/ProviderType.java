@@ -7,7 +7,7 @@ import java.util.Optional;
 public enum ProviderType {
     OPENAI("openai", "OpenAI", "https://api.openai.com/v1", "gpt-image-1", true, false),
     OPENAI_COMPATIBLE("openaiCompatible", "OpenAI Compatible", "", "gpt-image-1", false, false),
-    AIHUBMIX("aihubmix", "AiHubMix", "https://aihubmix.com/v1", "doubao/doubao-seedream-4-0-250828", true, true),
+    AIHUBMIX("aihubmix", "AiHubMix", "https://aihubmix.com/v1", "doubao/doubao-seedream-5.0-lite", true, true),
     SILICONFLOW("siliconflow", "硅基流动", "https://api.siliconflow.cn/v1", "Kwai-Kolors/Kolors", true, false),
     DOUBAO("doubao", "豆包大模型", "https://ark.cn-beijing.volces.com/api/v3", "doubao-seedream-4-5-250828", true, false),
     ZHIPU("zhipu", "智谱 AI", "https://open.bigmodel.cn/api/paas/v4", "cogview-4", true, false),

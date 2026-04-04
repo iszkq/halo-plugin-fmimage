@@ -19,7 +19,7 @@ spec:
           label: 默认尺寸
           value: 1K
           options:
-            - label: 1K
+            - label: 720p / 1K（低成本）
               value: 1K
             - label: 2K (16:9)
               value: 2K
@@ -58,11 +58,12 @@ spec:
         - $formkit: text
           name: defaultModel
           label: 默认模型
-          value: doubao/doubao-seedream-4-0-250828
+          value: doubao/doubao-seedream-5.0-lite
         - $formkit: textarea
           name: modelOptions
           label: 模型列表
           value: |
+            doubao/doubao-seedream-5.0-lite
             doubao/doubao-seedream-4-0-250828
             qianfan/qwen-image
             openai/gpt-image-1-mini

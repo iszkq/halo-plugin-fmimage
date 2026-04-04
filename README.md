@@ -4,8 +4,8 @@
 
 ## 当前版本
 
-- 插件版本：`1.0.25`
-- 版本规则：后续只递增最后一位，例如 `1.0.25 -> 1.0.26`
+- 插件版本：`1.0.26`
+- 版本规则：后续只递增最后一位，例如 `1.0.26 -> 1.0.27`
 
 ## 手动升级版本
 
@@ -21,25 +21,30 @@
 ## 当前默认方案
 
 - 唯一提供商：`AiHubMix`
-- 默认模型：`doubao/doubao-seedream-4-0-250828`
+- 默认模型：`doubao/doubao-seedream-5.0-lite`
 - 保留模型：
+  - `doubao/doubao-seedream-5.0-lite`
   - `doubao/doubao-seedream-4-0-250828`
   - `qianfan/qwen-image`
   - `openai/gpt-image-1-mini`
 - 默认尺寸：`1K`
+- 默认低成本档显示为：`720p / 1K（低成本）`
 - 可选尺寸：
-  - Doubao：`1K`、`2K`、`auto`
+  - Doubao：`720p / 1K（低成本）`、`2K`、`auto`
   - Qwen：`1024x1024`
   - GPT Mini：`1024x1024`
 - Doubao 固定返回：`url`
+- Doubao 默认质量：`low`
 - Doubao 固定张数：`1`
 
-## 1.0.25 调整
+## 1.0.26 调整
 
-- 修复 AiHubMix 豆包模型 `response_format` 参数错误，改为按官方示例固定使用 `url`
-- 默认豆包模型切到官方新版：`doubao/doubao-seedream-4-0-250828`
-- 兼容旧配置里写的 `doubao/doubao-seedream-4-0`，运行时会自动映射到新版模型，避免升级后还要先手改
-- 设置页和前端默认返回格式同步为 `url`
+- 新增并默认切换到官方模型：`doubao/doubao-seedream-5.0-lite`
+- Doubao 默认走低成本档：`1K + quality=low`
+- 前端文案把低成本档标成 `720p / 1K（低成本）`，避免误填上游不支持的尺寸值
+- 修复保存到 Halo 时 `Invalid part of policyName`
+- 上传附件改为通过 multipart 表单传 `policyName` 和 `groupName`
+- 如果插件设置里填的是存储策略显示名，前端会自动匹配成 Halo 真正的策略名再上传
 
 ## 使用方式
 
@@ -63,6 +68,5 @@
 ## 备注
 
 - 如果 `https://aihubmix.com/v1` 在你的服务器上解析失败，可以直接改成 `https://api.aihubmix.com/v1`
-- 如果你想尽量省钱，优先用 `doubao/doubao-seedream-4-0-250828 + 1K`
-- `qianfan/qwen-image` 更适合中文文字、海报字效
-- `openai/gpt-image-1-mini` 作为较稳的低成本 GPT 备选
+- 目前参考的 AiHubMix 文档里，Doubao 尺寸仍以 `1K / 2K / 4K / auto` 为主，所以这次没有把 `720p` 直接作为上游 size 值发送，避免再次触发 size 参数错误
+- 你要的“720p”我这里按低成本档处理成 `1K + quality=low`，这是当前更稳的近似方案

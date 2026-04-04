@@ -106,14 +106,12 @@ export async function listGroups(): Promise<HaloGroup[]> {
 export async function uploadAttachment(file: File, policyName: string, groupName?: string): Promise<HaloAttachment> {
   const formData = new FormData();
   formData.append("file", file);
-
-  const params = new URLSearchParams();
-  params.set("policyName", policyName);
-  if (groupName) {
-    params.set("groupName", groupName);
+  formData.append("policyName", policyName.trim());
+  if (groupName?.trim()) {
+    formData.append("groupName", groupName.trim());
   }
 
-  const response = await fetch(`/apis/api.console.halo.run/v1alpha1/attachments/upload?${params.toString()}`, {
+  const response = await fetch("/apis/api.console.halo.run/v1alpha1/attachments/upload", {
     method: "POST",
     credentials: "same-origin",
     headers: buildRequestHeaders(),

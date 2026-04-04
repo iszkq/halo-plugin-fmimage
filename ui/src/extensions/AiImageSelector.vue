@@ -60,7 +60,7 @@ const availableSizes = computed(() => {
     const normalizedModel = model.value.toLowerCase();
     if (normalizedModel.startsWith("doubao/")) {
       return [
-        { label: "1K", value: "1K" },
+        { label: "720p / 1K（低成本）", value: "1K" },
         { label: "2K (16:9)", value: "2K" },
         { label: "auto", value: "auto" },
       ];
@@ -87,6 +87,41 @@ const availableCounts = computed(() => {
   }
   return [1, 2, 3, 4];
 });
+
+function resolvePolicyName(rawValue: string, items: HaloPolicy[]) {
+  const normalizedValue = rawValue.trim();
+  if (!items.length) {
+    return "";
+  }
+  if (!normalizedValue) {
+    return items[0]?.metadata?.name || "";
+  }
+  const exactName = items.find((item) => item.metadata?.name === normalizedValue);
+  if (exactName?.metadata?.name) {
+    return exactName.metadata.name;
+  }
+  const matchedDisplayName = items.find((item) => item.spec?.displayName === normalizedValue);
+  if (matchedDisplayName?.metadata?.name) {
+    return matchedDisplayName.metadata.name;
+  }
+  return items[0]?.metadata?.name || "";
+}
+
+function resolveGroupName(rawValue: string, items: HaloGroup[]) {
+  const normalizedValue = rawValue.trim();
+  if (!normalizedValue) {
+    return "";
+  }
+  const exactName = items.find((item) => item.metadata?.name === normalizedValue);
+  if (exactName?.metadata?.name) {
+    return exactName.metadata.name;
+  }
+  const matchedDisplayName = items.find((item) => item.spec?.displayName === normalizedValue);
+  if (matchedDisplayName?.metadata?.name) {
+    return matchedDisplayName.metadata.name;
+  }
+  return "";
+}
 
 function syncModelOptions() {
   if (!availableSizes.value.some((item) => item.value === size.value)) {
@@ -137,9 +172,8 @@ async function loadInitialData() {
     responseFormat.value = providerCatalog.defaultResponseFormat || "url";
     syncModelOptions();
 
-    const preferredPolicy = providerCatalog.defaultPolicyName || policyItems[0]?.metadata?.name || "";
-    policyName.value = preferredPolicy;
-    groupName.value = providerCatalog.defaultGroupName || "";
+    policyName.value = resolvePolicyName(providerCatalog.defaultPolicyName || "", policyItems);
+    groupName.value = resolveGroupName(providerCatalog.defaultGroupName || "", groupItems);
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : "加载插件配置失败";
   } finally {
@@ -207,9 +241,18 @@ async function handleSave() {
 
   saving.value = true;
   try {
+    const resolvedPolicyName = resolvePolicyName(policyName.value, policies.value);
+    const resolvedGroupName = resolveGroupName(groupName.value, groups.value);
+    policyName.value = resolvedPolicyName;
+    groupName.value = resolvedGroupName;
+
+    if (!resolvedPolicyName) {
+      throw new Error("当前没有可用的存储策略，请先在 Halo 存储设置中确认策略名称。");
+    }
+
     const item = selectedResult.value;
     const file = await imageSourceToFile(item.previewUrl, item.mediaType, guessFileName(item));
-    const attachment = await uploadAttachment(file, policyName.value, groupName.value || undefined);
+    const attachment = await uploadAttachment(file, resolvedPolicyName, resolvedGroupName || undefined);
     const selectedAttachment = toSelectedAttachment(attachment);
     if (!selectedAttachment.url) {
       throw new Error("附件已上传，但未返回可插入的访问地址。");
