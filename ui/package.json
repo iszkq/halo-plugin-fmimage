@@ -1,6 +1,6 @@
 {
   "name": "halo-plugin-fmimage-ui",
-  "version": "1.0.32",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "build": "vite build",

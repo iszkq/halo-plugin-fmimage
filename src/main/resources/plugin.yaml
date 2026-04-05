@@ -6,14 +6,14 @@ spec:
   enabled: true
   requires: ">=2.22.0"
   author:
-    name: FM Image Contributors
-    website: https://github.com/your-account/halo-plugin-fmimage
+    name: 恪勤
+    website: https://github.com/iszkq/halo-plugin-fmimage/
   logo: logo.svg
   settingName: halo-plugin-fmimage-settings
   configMapName: halo-plugin-fmimage-config
-  homepage: https://github.com/your-account/halo-plugin-fmimage
-  repo: https://github.com/your-account/halo-plugin-fmimage
-  issues: https://github.com/your-account/halo-plugin-fmimage/issues
+  homepage: https://github.com/iszkq/halo-plugin-fmimage/
+  repo: https://github.com/iszkq/halo-plugin-fmimage/
+  issues: https://github.com/iszkq/halo-plugin-fmimage/issues
   displayName: "FM Image"
   description: "在 Halo 附件选择器中提供 AI 文生图能力，并支持按存储策略保存到附件库。"
   license:

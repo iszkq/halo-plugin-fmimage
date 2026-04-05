@@ -111,7 +111,7 @@ public class FmImageSettingsService {
             getResolvedProviders(Boolean.TRUE.equals(general.showExperimentalProviders()))
                 .map(configMap -> new PluginSummaryResponse(
                     "halo-plugin-fmimage",
-                    "1.0.32",
+                    "1.0.1",
                     general.defaultProvider(),
                     general.defaultSize(),
                     general.defaultResponseFormat(),
